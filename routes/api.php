@@ -22,7 +22,7 @@ use App\Http\Controllers\Api\ProfileController;
 
 Route::get('/trees', [TreeController::class, 'list']);
 Route::get('/trees/{id}', [TreeController::class, 'show']);
-Route::post('/trees/updateLocation/{id}', [TreeController::class, 'updateLocation']);
+Route::put('/trees/update-location/{id}', [TreeController::class, 'updateLocation']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
 

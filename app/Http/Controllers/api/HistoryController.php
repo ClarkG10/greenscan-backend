@@ -15,7 +15,7 @@ class HistoryController extends Controller
 
         if ($request->keyword) {
             $query->where(function ($query) use ($request) {
-                $query->where('tree_id', 'like', '%' . $request->keyword . '%')
+                $query->where('tree_id', 'like', $request->keyword)
                     ->orWhere('action', 'like', '%' . $request->keyword . '%');
             });
         }

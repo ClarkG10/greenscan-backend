@@ -5,15 +5,26 @@ namespace App\Http\Controllers\api;
 use App\Http\Controllers\Controller;
 use App\Models\History;
 use App\Models\Tree;
+use Illuminate\Auth\Events\Validated;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class TreeController extends Controller
 {
     // Display a listing of trees
-    public function list()
+    public function list(Request $request)
     {
-        $trees = Tree::all();
-        return response()->json($trees);
+        $query = Tree::query();
+
+        if ($request->keyword) {
+            $query->where(function ($query) use ($request) {
+                $query->where('common_name', 'like', '%' . $request->keyword . '%')
+                    ->orWhere('scientific_name', 'like', '%' . $request->keyword . '%')
+                    ->orWhere('family_name', 'like', '%' . $request->keyword . '%');
+            });
+        }
+
+        return response()->json($query);
     }
 
     // Display a listing of trees
@@ -84,7 +95,7 @@ class TreeController extends Controller
     public function show($id)
     {
         // Find tree by id
-        $tree = Tree::find($id);
+        $tree = Tree::findOrFail($id);
 
         // Check if tree exists
         if (!$tree) {
@@ -95,10 +106,10 @@ class TreeController extends Controller
     }
 
     // Update the specified tree details
-    public function update(Request $request, $id)
+    public function update(Request $request, string $id)
     {
         // Find the tree by ID
-        $tree = Tree::find($id);
+        $tree = Tree::findOrFail($id);
 
         // Check if tree exists
         if (!$tree) {
@@ -151,21 +162,15 @@ class TreeController extends Controller
     }
 
 
-
-
     // Update tree location based on latitude and longitude (called after QR code scanning)
     public function updateLocation(Request $request, $id)
     {
-        // Find the tree by id
+        // Find the tree by ID
         $tree = Tree::find($id);
-
-        // Check if tree exists
         if (!$tree) {
+            Log::warning("Tree not found with ID: {$id}");
             return response()->json(['message' => 'Tree not found'], 404);
         }
-
-        // Capture old data before update
-        $oldData = $tree->toArray();
 
         // Validate the incoming location data
         $validated = $request->validate([
@@ -174,26 +179,11 @@ class TreeController extends Controller
         ]);
 
         // Update the tree's location
-        $tree->update([
-            'latitude' => $validated['latitude'],
-            'longitude' => $validated['longitude'],
-        ]);
-
-        // Capture new data after update
-        $newData = $tree->toArray();
-
-
-        // Log the update action to the history table
-        History::create([
-            'tree_id' => $tree->tree_id,
-            'user_id' => auth()->user()->id, // Assuming the user is authenticated
-            'action' => 'updated location',
-            'old_data' => json_encode($oldData),
-            'new_data' => json_encode($newData),
-        ]);
+        $tree->update($validated);
 
         return response()->json(['message' => 'Tree location updated successfully', 'tree' => $tree]);
     }
+
 
     // Remove the specified tree from the database
     public function destroy($id)
