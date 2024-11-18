@@ -24,7 +24,9 @@ class TreeController extends Controller
             });
         }
 
-        return response()->json($query);
+        $tree = $query->get();
+
+        return response()->json($tree);
     }
 
     // Display a listing of trees
